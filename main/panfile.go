@@ -10,12 +10,13 @@ import (
 
 var (
 	uploadDirFlag = flag.String("upload-dir", "", "Directory to store uploaded files")
-	portFlag      = flag.String("port", "2334", "Port on which the server will listen")
+	prefixFlag    = flag.String("pre", "static", "prefix name for file")
+	portFlag      = flag.String("port", "2333", "Port on which the server will listen")
 	uploadDir     string
 )
 
 func main() {
-	// 解析命令行参数
+	//解析命令行参数
 	flag.Parse()
 
 	// 如果没有提供-upload-dir参数，使用当前工作目录
@@ -29,6 +30,7 @@ func main() {
 		uploadDir = *uploadDirFlag // 使用用户提供的目录
 	}
 	port := *portFlag
+	prefix := fmt.Sprintf("/%s/", *prefixFlag)
 
 	// 在程序启动时创建自定义映射目录
 	err := os.MkdirAll(uploadDir, os.ModePerm)
@@ -36,12 +38,11 @@ func main() {
 		log.Fatalf("Error creating upload directory: %v", err)
 	}
 
-	// 设置文件服务器，使用根路径来服务文件
-	http.Handle("/", http.FileServer(http.Dir(uploadDir)))
+	http.Handle(prefix, http.StripPrefix(prefix, http.FileServer(http.Dir(uploadDir))))
 
-	fmt.Printf("Server started on 0.0.0.0:%s\n", port)
-	err = http.ListenAndServe("0.0.0.0:"+port, nil) // 注意这里`erro`变为`err`
-	if err != nil {
+	fmt.Printf("Server started on 0.0.0.0:%s%s\n", port, prefix)
+	erro := http.ListenAndServe("0.0.0.0:"+port, nil)
+	if erro != nil {
 		log.Fatalf("Error starting server: %v", err)
 	}
 }
